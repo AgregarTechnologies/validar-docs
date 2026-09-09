@@ -55,7 +55,7 @@ All errors follow a consistent JSON envelope:
 | `404` | `not_found` | Resource does not exist or is not visible to your institution |
 | `409` | `business_logic` | Conflict — duplicate action or state machine violation |
 | `422` | `business_logic` | Business rule violation |
-| `429` | — | Rate limit exceeded |
+| `429` | — | Rate limit exceeded — 300 req/min per IP at the gateway (burst 60) |
 | `500` | `system` | Unexpected internal error |
 | `502` | `external` | Upstream dependency failure |
 | `503` | `external` | Service temporarily unavailable |
@@ -121,7 +121,7 @@ All errors follow a consistent JSON envelope:
 </Accordion>
 
 <Accordion title="Could not validate credentials">
-  Your JWT has expired (tokens last 1 hour) or is malformed. Re-authenticate via `POST /auth/login`.
+  Your access token has expired (they last 30 minutes) or is malformed. Refresh it via `POST /auth/refresh`, or re-authenticate via `POST /auth/login`.
 </Accordion>
 
 <Accordion title="Invalid API key">
@@ -198,17 +198,11 @@ Returned when:
 
 ---
 
-## 429 — Rate limited
+## 429 — Too many requests
 
-Default limits per API key:
+The API gateway rate-limits **per client IP**: **300 requests per minute** (~5/s) across all `/api/*` endpoints combined, with a short **burst allowance of 60**. Exceeding it returns `429`. The limit is keyed on IP (not API key) and shared across endpoints; `GET /api/v1/health` is exempt.
 
-| Endpoint | Limit |
-|---|---|
-| `POST /ingestion/transaction` | 100 req/s |
-| `POST /ingestion/batch` | 10 req/s |
-| All read endpoints | 50 req/s |
-
-Back off for the duration in the `Retry-After` response header (in seconds).
+Back off and retry. For high volume, prefer `POST /ingestion/batch` (up to 1,000 transactions per request) over many single calls — a batch is one request against the limit.
 
 ---
 
