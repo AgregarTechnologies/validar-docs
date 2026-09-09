@@ -200,9 +200,20 @@ Returned when:
 
 ## 429 — Too many requests
 
-The API gateway rate-limits **per client IP**: **300 requests per minute** (~5/s) across all `/api/*` endpoints combined, with a short **burst allowance of 60**. Exceeding it returns `429`. The limit is keyed on IP (not API key) and shared across endpoints; `GET /api/v1/health` is exempt.
+Two independent limits protect the API; either can return `429`.
 
-Back off and retry. For high volume, prefer `POST /ingestion/batch` (up to 1,000 transactions per request) over many single calls — a batch is one request against the limit.
+**Per API key (and per institution)** — fixed per-minute windows, split by traffic type. Whichever is reached first returns `429` with a `Retry-After` header (seconds until the window resets):
+
+| Scope | Write (`POST /ingestion/*`) | Read (everything else) |
+|---|---|---|
+| Per API key | 600 / min | 1,200 / min |
+| Per institution (all its keys combined) | 3,000 / min | 6,000 / min |
+
+These are the defaults — your contract may set different values, and an individual key can be given a higher or lower write limit on request.
+
+**Per client IP (gateway backstop)** — a coarser network guard: **300 requests/minute per IP** (burst 60) across all `/api/*`. `GET /api/v1/health` is exempt.
+
+Honour `Retry-After` and back off. For high volume, prefer `POST /ingestion/batch` (up to 1,000 transactions per request) over many single calls — a batch counts as one request against the limits.
 
 ---
 
