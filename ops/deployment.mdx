@@ -1,12 +1,12 @@
 ---
 title: "Deployment"
-description: "How the transaction monitor is deployed, scaled, and updated."
+description: "How Validar is deployed, scaled, and updated."
 icon: "server"
 ---
 
 ## Architecture
 
-The transaction monitor runs as **10 Docker containers** on a single EC2 instance (`t3.xlarge`, 16 GB RAM), managed by Docker Compose and fronted by nginx with Let's Encrypt TLS.
+Validar runs as **10 Docker containers** on a single EC2 instance (`t3.xlarge`, 16 GB RAM), managed by Docker Compose and fronted by nginx with Let's Encrypt TLS.
 
 ```
 Internet → nginx (TLS) → tm-app (FastAPI :8020)
